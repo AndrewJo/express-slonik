@@ -1,5 +1,8 @@
 import { DatabaseTransactionConnection } from "slonik";
 
+import slonik from "express-slonik/middleware";
+import type { SlonikRequestContext } from "express-slonik/middleware";
+
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
@@ -9,5 +12,5 @@ declare global {
   }
 }
 
-export { default } from "express-slonik/middleware";
-export type { SlonikRequestContext } from "express-slonik/middleware";
+export type { SlonikRequestContext };
+export default slonik;
