@@ -63,6 +63,9 @@ declare interface TransactionContext {
  * @param transaction DatabaseTransactionConnection instance
  */
 class TransactionContext extends EventEmitter {
+  public isStarted = false;
+  public error: unknown;
+
   constructor(
     public readonly transaction: DatabaseTransactionConnection,
     protected readonly options?: EventEmitterOptions
@@ -105,15 +108,33 @@ export class SlonikRequestContext {
         await this.pool.transaction(async (transaction) => {
           await transaction.query(sql`SET TRANSACTION ISOLATION LEVEL ${isolationLevel};`);
 
-          this.transactionContext = new TransactionContext(transaction);
+          const transactionContext = new TransactionContext(transaction);
+          transactionContext.isStarted = true;
+          this.transactionContext = transactionContext;
           req.transaction = transaction;
 
           // Hold the transaction open until committed or on error.
           await new Promise<void>((resolve, reject) => {
+            transactionContext
+              .once("commit", () => {
+                resolve();
+              })
+              .once("error", (error) => {
+                transactionContext.error = error;
+                reject(error);
+              });
+
             // While the transaction is held open, hand off control to next middleware.
             next();
-            this.transactionContext.once("commit", resolve).once("error", reject);
+
+            res.once("finish", () => {
+              if (transactionContext.isStarted && !transactionContext.error) {
+                transactionContext.emit("commit");
+              }
+            });
           });
+
+          transactionContext.isStarted = false;
         }, retryLimit);
       } catch (error) {
         next(error);
@@ -155,6 +176,13 @@ export class SlonikRequestContext {
       }
     };
   }
+
+  public end(): [Handler, ErrorRequestHandler] {
+    return [
+      this.commit(),
+      this.catchError(),
+    ];
+  }
 }
 
 function isDatabasePool(poolLike: unknown): boolean {
@@ -169,7 +197,7 @@ function isDatabasePool(poolLike: unknown): boolean {
  * @param connectionUri - PostgreSQL [Connection URI](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING)
  * @param clientConfigurationInput
  */
-function slonik(
+function createMiddleware(
   connectionUri: string,
   clientConfigurationInput?: ClientConfigurationInput
 ): SlonikRequestContext;
@@ -178,9 +206,9 @@ function slonik(
  * Request handler wrapped in express-slonik context.
  * @param pool - Slonik {@link DatabasePool} instance
  */
-function slonik(pool: DatabasePool): SlonikRequestContext;
+function createMiddleware(pool: DatabasePool): SlonikRequestContext;
 
-function slonik(
+function createMiddleware(
   poolOrConnectionUri: string | DatabasePool,
   clientConfigurationInput?: ClientConfigurationInput
 ): SlonikRequestContext {
@@ -198,4 +226,4 @@ function slonik(
   return SlonikRequestContext.getOrCreateContext(pool);
 }
 
-export default slonik;
+export default createMiddleware;
