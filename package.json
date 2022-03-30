@@ -4,8 +4,13 @@
   "description": "Slonik transaction middleware",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js"
+  },
   "scripts": {
-    "build": "tsc -b src/"
+    "build": "tsc -b src/",
+    "prepare": "ts-patch install -s",
+    "test": "mocha tests/**/*.spec.ts"
   },
   "repository": {
     "type": "git",
@@ -49,6 +54,7 @@
     "prettier": "^2.6.1",
     "slonik": "^28.0.0",
     "ts-node": "^10.7.0",
+    "ts-patch": "^2.0.1",
     "typescript": "^4.6.3",
     "typescript-transform-paths": "^3.3.1"
   }
