@@ -1,0 +1,25 @@
+# OS specific files
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
+
+# Test coverage output directories
+.nyc_output/
+coverage/
+
+# TypeScript compiler output directory
+dist/
+
+# Output directory for npm pack command
+*.tgz
+
+# Project dependencies
+node_modules/
+
+# Log files
+npm-debug.log*
