@@ -71,7 +71,7 @@ class TransactionContext extends EventEmitter {
   }
 }
 
-class SlonikRequestContext {
+export class SlonikRequestContext {
   private static instance: SlonikRequestContext;
   private transactionContext: TransactionContext;
 

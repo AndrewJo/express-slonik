@@ -10,3 +10,4 @@ declare global {
 }
 
 export { default } from "express-slonik/middleware";
+export type { SlonikRequestContext } from "express-slonik/middleware";
