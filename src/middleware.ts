@@ -92,7 +92,7 @@ export class SlonikRequestContext {
    * @param isolationLevel - PostgreSQL [transaction isolation level](https://www.postgresql.org/docs/current/transaction-iso.html). Defaults to read committed isolation level.
    * @param retryLimit - Number of times to retry transaction. Defaults to `5`.
    */
-  public transaction(
+  public begin(
     isolationLevel: IsolationLevel = IsolationLevels.READ_COMMITTED,
     retryLimit = 5
   ): Handler {
