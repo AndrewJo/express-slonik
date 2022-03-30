@@ -177,6 +177,10 @@ export class SlonikRequestContext {
     };
   }
 
+  /**
+   * Ends the transaction. If there are no errors in the request handler chain, the transaction is
+   * automatically committed. Otherwise, it is rolled back.
+   */
   public end(): [Handler, ErrorRequestHandler] {
     return [
       this.commit(),
