@@ -1,7 +1,6 @@
 import EventEmitter from "events";
 import { ErrorRequestHandler, Handler } from "express";
 import {
-  ClientConfigurationInput,
   createPool,
   DatabasePool,
   DatabaseTransactionConnection,
@@ -74,18 +73,18 @@ class TransactionContext extends EventEmitter {
   }
 }
 
-export class SlonikRequestContext {
-  private static instance: SlonikRequestContext;
+export class RequestTransactionContext {
+  private static instance: RequestTransactionContext;
   private transactionContext: TransactionContext;
 
   private constructor(private readonly pool: DatabasePool) {}
 
-  public static getOrCreateContext(pool: DatabasePool): SlonikRequestContext {
-    if (!SlonikRequestContext.instance) {
-      SlonikRequestContext.instance = new SlonikRequestContext(pool);
+  public static getOrCreateContext(pool: DatabasePool): RequestTransactionContext {
+    if (!RequestTransactionContext.instance) {
+      RequestTransactionContext.instance = new RequestTransactionContext(pool);
     }
 
-    return SlonikRequestContext.instance;
+    return RequestTransactionContext.instance;
   }
 
   /**
@@ -182,10 +181,7 @@ export class SlonikRequestContext {
    * automatically committed. Otherwise, it is rolled back.
    */
   public end(): [Handler, ErrorRequestHandler] {
-    return [
-      this.commit(),
-      this.catchError(),
-    ];
+    return [this.commit(), this.catchError()];
   }
 }
 
@@ -198,36 +194,16 @@ function isDatabasePool(poolLike: unknown): boolean {
 
 /**
  * Request handler wrapped in express-slonik context.
- * @param connectionUri - PostgreSQL [Connection URI](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING)
- * @param clientConfigurationInput
- */
-function createMiddleware(
-  connectionUri: string,
-  clientConfigurationInput?: ClientConfigurationInput
-): SlonikRequestContext;
-
-/**
- * Request handler wrapped in express-slonik context.
  * @param pool - Slonik {@link DatabasePool} instance
  */
-function createMiddleware(pool: DatabasePool): SlonikRequestContext;
-
-function createMiddleware(
-  poolOrConnectionUri: string | DatabasePool,
-  clientConfigurationInput?: ClientConfigurationInput
-): SlonikRequestContext {
-  if (typeof poolOrConnectionUri !== "string" && !isDatabasePool(poolOrConnectionUri)) {
+function createMiddleware(pool: DatabasePool): RequestTransactionContext {
+  if (!isDatabasePool(pool)) {
     throw new TypeError(
       "First argument must be an instance of Slonik pool instance or connection URI"
     );
   }
 
-  const pool =
-    typeof poolOrConnectionUri === "string"
-      ? createPool(poolOrConnectionUri, clientConfigurationInput)
-      : poolOrConnectionUri;
-
-  return SlonikRequestContext.getOrCreateContext(pool);
+  return RequestTransactionContext.getOrCreateContext(pool);
 }
 
 export default createMiddleware;
