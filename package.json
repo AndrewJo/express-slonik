@@ -13,7 +13,8 @@
     "prepare": "run-p prepare:*",
     "prepare:husky": "husky install",
     "prepare:ts-patch": "ts-patch install -s",
-    "test": "mocha tests/**/*.spec.ts"
+    "test": "mocha tests/**/*.spec.ts",
+    "test:coverage": "nyc npm test"
   },
   "repository": {
     "type": "git",
