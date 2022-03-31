@@ -87,7 +87,7 @@ describe("createMiddleware", function () {
     app.post(
       "/",
       transaction.begin(),
-      async (req: Request, res: Response, next: NextFunction) => {
+      async (req: Request, res: Response) => {
         await req.transaction.query(sql`INSERT INTO test (foo) VALUES (999) RETURNING foo`);
         res.end();
       },
@@ -104,7 +104,7 @@ describe("createMiddleware", function () {
     app.post(
       "/",
       transaction.begin(),
-      async (req: Request, res: Response) => {
+      async (req: Request) => {
         await req.transaction.query(sql`INSERT INTO test (foo) VALUES (100) RETURNING foo`);
         throw new Error("some error");
       },
