@@ -99,7 +99,7 @@ describe("createMiddleware", function () {
 
     await chai.request(app).post("/");
 
-    const result = await pool.oneFirst(sql`SELECT foo FROM test`);
+    const result = await pool.oneFirst(sql`SELECT foo FROM test WHERE foo = 999`);
     expect(result).to.equal(999);
   });
 
