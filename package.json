@@ -10,7 +10,9 @@
   "scripts": {
     "build": "tsc -b src/",
     "lint": "eslint --ext .ts .",
-    "prepare": "ts-patch install -s",
+    "prepare": "run-p prepare:*",
+    "prepare:husky": "husky install",
+    "prepare:ts-patch": "ts-patch install -s",
     "test": "mocha tests/**/*.spec.ts"
   },
   "repository": {
