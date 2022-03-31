@@ -2,10 +2,11 @@ import chai, { expect, use } from "chai";
 import chaiHttp from "chai-http";
 
 import express, { Express, NextFunction, Request, Response, json } from "express";
-import { createPool, DatabasePool } from "mocha-slonik";
-import { DatabaseTransactionConnection, sql } from "slonik";
+import { createPool, DatabasePool, DatabaseTransactionConnection, sql } from "slonik";
+import { createQueryLoggingInterceptor } from "slonik-interceptor-query-logging";
 
-import createMiddleware, { SlonikRequestContext } from "../src";
+import createMiddleware, { IsolationLevels, SlonikRequestContext } from "../src";
+import { timeout } from "@tests/helper";
 
 use(chaiHttp);
 
@@ -17,16 +18,18 @@ describe("createMiddleware", function () {
   before(async function () {
     app = express();
     app.use(json());
-    pool = createPool(process.env.DATABASE_URL || "postgres://localhost:5432");
+    pool = createPool(process.env.DATABASE_URL || "postgres://localhost:5432", {
+      interceptors: [createQueryLoggingInterceptor()],
+    });
     transaction = createMiddleware(pool);
   });
 
   beforeEach(async function () {
-    await pool.query(sql`CREATE TABLE test (foo INTEGER NOT NULL);`);
-  })
+    await pool.query(sql`CREATE TABLE IF NOT EXISTS test (foo INTEGER NOT NULL);`);
+  });
 
-  afterEach(function () {
-    pool.rollback();
+  afterEach(async function () {
+    await pool.query(sql`DROP TABLE test;`);
   });
 
   after(async function () {
@@ -66,7 +69,6 @@ describe("createMiddleware", function () {
 
   it("should commit transaction when there are no errors", async function () {
     await pool.query(sql`INSERT INTO test (foo) VALUES (1) RETURNING foo`);
-
     app.put(
       "/",
       transaction.begin(),
@@ -74,13 +76,18 @@ describe("createMiddleware", function () {
         await req.transaction.query(sql`UPDATE test SET foo = ${req.body.foo} WHERE foo = 1`);
         next();
       },
+      transaction.end(),
+      transaction.begin(),
+      async (req: Request, res: Response) => {
+        // Previous transaction should've committed so we should be able to query by req.body.foo
+        const { foo } = await req.transaction.one(sql`SELECT foo FROM test WHERE foo = ${req.body.foo}`);
+        res.json(foo);
+      },
       transaction.end()
     );
 
-    await chai.request(app).put("/").send({ foo: 2 });
-
-    const result = await pool.oneFirst(sql`SELECT foo FROM test`);
-    expect(result).to.equal(2);
+    const { body } = await chai.request(app).put("/").send({ foo: 2 });
+    expect(body).to.equal(2);
   });
 
   it("should autocommit transaction when response is sent", async function () {
@@ -90,7 +97,7 @@ describe("createMiddleware", function () {
       async (req: Request, res: Response) => {
         await req.transaction.query(sql`INSERT INTO test (foo) VALUES (999) RETURNING foo`);
         res.end();
-      },
+      }
       // Omit transaction.end() so we can test if autocommit works when response is sent.
     );
 
@@ -115,5 +122,69 @@ describe("createMiddleware", function () {
 
     const result = await pool.maybeOneFirst(sql`SELECT foo FROM test WHERE foo = 100`);
     expect(result).to.be.null;
+  });
+
+  context("when isolation level is READ COMMITTED", function () {
+    let request: ChaiHttp.Agent;
+
+    beforeEach(async function () {
+      await pool.query(
+        sql`INSERT INTO test (foo) SELECT * FROM ${sql.unnest(
+          [[101], [102]],
+          ["int4"]
+        )} RETURNING foo`
+      );
+
+      app
+        .get(
+          "/:foo",
+          transaction.begin(IsolationLevels.READ_COMMITTED, 1),
+          async (req: Request, res: Response) => {
+            // Artificially wait while the other transaction updates the values
+            await timeout(5);
+            const result = await req.transaction.one(
+              sql`SELECT foo FROM test WHERE foo = ${req.params.foo}`
+            );
+            res.json(result);
+          },
+          transaction.end()
+        )
+        .put(
+          "/:foo",
+          transaction.begin(IsolationLevels.READ_COMMITTED, 1),
+          async (req: Request, res: Response) => {
+            await req.transaction.query(
+              sql`UPDATE test SET foo = ${req.body.foo} WHERE foo = ${req.params.foo}`
+            );
+
+            // Update but don't commit so the other transaction can read uncommitted data.
+            await timeout(10);
+
+            const result = await req.transaction.one(
+              sql`SELECT foo FROM test WHERE foo = ${req.body.foo}`
+            );
+            res.json(result);
+          },
+          transaction.end()
+        );
+
+      request = chai.request(app).keepOpen();
+    });
+
+    afterEach(async function () {
+      request.close();
+    });
+
+    it("should isolate against dirty reads", async function () {
+      // Send concurrent requests to update and read the same row
+      const [putResponse, getResponse] = await Promise.all([
+        request.put("/101").send({ foo: 201 }),
+        request.get("/101"),
+      ]);
+
+      // If there was a dirty read, response from GET request should be updated to 201.
+      expect(getResponse.body.foo).to.equal(101);
+      expect(putResponse.body.foo).to.equal(201);
+    });
   });
 });
