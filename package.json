@@ -16,7 +16,7 @@
     "pretest": "npm run build",
     "test": "mocha tests/**/*.spec.ts",
     "test:coverage": "nyc npm test",
-    "test:coverage:report": "nyc report --reporter=html"
+    "test:coverage:report": "nyc report --reporter=html --reporter=lcov"
   },
   "repository": {
     "type": "git",
