@@ -9,6 +9,7 @@
   },
   "scripts": {
     "build": "tsc -b src/",
+    "lint": "eslint --ext .ts .",
     "prepare": "ts-patch install -s",
     "test": "mocha tests/**/*.spec.ts"
   },
@@ -48,6 +49,7 @@
     "chai-http": "^4.3.0",
     "eslint": "^8.12.0",
     "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-mocha": "^10.0.3",
     "express": "^4.17.3",
     "mocha": "^9.2.2",
     "mocha-slonik": "^4.1.0",
