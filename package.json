@@ -14,7 +14,8 @@
     "prepare:husky": "husky install",
     "prepare:ts-patch": "ts-patch install -s",
     "test": "mocha tests/**/*.spec.ts",
-    "test:coverage": "nyc npm test"
+    "test:coverage": "nyc npm test",
+    "test:coverage:report": "nyc report --reporter=lcov"
   },
   "repository": {
     "type": "git",
