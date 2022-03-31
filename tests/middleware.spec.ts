@@ -2,7 +2,6 @@ import chai, { expect, use } from "chai";
 import chaiHttp from "chai-http";
 
 import express, { Express, NextFunction, Request, Response, json } from "express";
-import { Server } from "http";
 import { createPool, DatabasePool } from "mocha-slonik";
 import { DatabaseTransactionConnection, sql } from "slonik";
 
@@ -13,9 +12,7 @@ use(chaiHttp);
 describe("createMiddleware", function () {
   let pool: DatabasePool;
   let app: Express;
-  let server: Server;
   let transaction: SlonikRequestContext;
-  let client: ChaiHttp.Agent;
 
   before(async function () {
     app = express();
