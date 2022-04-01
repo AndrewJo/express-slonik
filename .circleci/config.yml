@@ -51,6 +51,24 @@ jobs:
       - store_artifacts:
           path: package
           destination: .
+  publish:
+    docker:
+      - image: cimg/node:lts
+    working_directory: ~/express-slonik
+    steps:
+      - attach_workspace:
+          at: ~/express-slonik
+      - run:
+          name: Set NPM token
+          command: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
+      - when:
+          condition: << pipeline.git.tag >>
+          steps:
+            - run: npm publish
+      - unless:
+          condition: << pipeline.git.tag >>
+          steps:
+            - run: npm publish --dry-run
 
 workflows:
   build-and-publish:
@@ -63,5 +81,14 @@ workflows:
           requires:
             - test
           filters:
+            tags:
+              only: /v\d+(?:\.\d+){0,2}(?:-\w+(?:\.\w+)*){0,1}/
+      - publish:
+          context: npm
+          requires:
+            - build
+          filters:
+            branches:
+              only: master
             tags:
               only: /v\d+(?:\.\d+){0,2}(?:-\w+(?:\.\w+)*){0,1}/
