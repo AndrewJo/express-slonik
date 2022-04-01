@@ -27,6 +27,7 @@ jobs:
           environment:
             NODE_ENV: test
             MOCHA_FILE: ./tests/results/mocha/results.xml
+            DATABASE_URL: postgres://postgres:circleci_test@localhost:5432/circle_test
       - codecov/upload
       - store_test_results:
           path: tests/results
