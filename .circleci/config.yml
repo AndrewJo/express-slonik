@@ -31,11 +31,37 @@ jobs:
       - codecov/upload
       - store_test_results:
           path: tests/results
+  build:
+    docker:
+      - image: cimg/node:lts
+    working_directory: ~/express-slonik
+    steps:
+      - checkout
+      - node/install-npm
+      - node/install-packages
+      - run:
+          name: Build package
+          command: |
+            mkdir package
+            npm pack --pack-destination package
+      - persist_to_workspace:
+          root: .
+          paths:
+            - "*"
+      - store_artifacts:
+          path: package
+          destination: .
 
 workflows:
   build-and-publish:
     jobs:
       - test:
+          filters:
+            tags:
+              only: /v\d+(?:\.\d+){0,2}(?:-\w+(?:\.\w+)*){0,1}/
+      - build:
+          requires:
+            - test
           filters:
             tags:
               only: /v\d+(?:\.\d+){0,2}(?:-\w+(?:\.\w+)*){0,1}/
