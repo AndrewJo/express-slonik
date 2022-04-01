@@ -1,9 +1,10 @@
 extends: "@istanbuljs/nyc-config-typescript"
 cache: false
 check-coverage: true
+all: true
 extension:
 - .ts
+include:
+- src/**/*.ts
 exclude:
-- coverage/
-- tests/**/*.ts
 - "**/*.d.ts"
