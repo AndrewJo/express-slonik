@@ -1,11 +1,8 @@
+import { randomUUID } from "crypto";
 import EventEmitter from "events";
+
 import { ErrorRequestHandler, Handler } from "express";
-import {
-  createPool,
-  DatabasePool,
-  DatabaseTransactionConnection,
-  sql,
-} from "slonik";
+import { createPool, DatabasePool, DatabaseTransactionConnection, sql } from "slonik";
 import { TransactionOutOfBoundsError, UndefinedPoolError } from "express-slonik/errors";
 
 type EventEmitterOptions = ConstructorParameters<typeof EventEmitter>[0];
@@ -44,7 +41,7 @@ export type IsolationLevel = typeof IsolationLevels[keyof typeof IsolationLevels
 
 interface TransactionEvents {
   commit: () => void;
-  error: (error: Error) => void;
+  rollback: (error: Error) => void;
 }
 
 declare interface TransactionContext {
@@ -62,22 +59,33 @@ declare interface TransactionContext {
  * @param transaction DatabaseTransactionConnection instance
  */
 class TransactionContext extends EventEmitter {
-  public isStarted = false;
   public error: unknown;
 
   constructor(
+    public readonly transactionId: string,
     public readonly transaction: DatabaseTransactionConnection,
     protected readonly options?: EventEmitterOptions
   ) {
     super(options);
   }
+
+  public commit() {
+    this.emit("commit");
+  }
+
+  public rollback(error: Error) {
+    this.error = error;
+    this.emit("rollback", error);
+  }
 }
 
 export class RequestTransactionContext {
   private static instance: RequestTransactionContext;
-  private transactionContext: TransactionContext;
+  private transactionContext: Record<string, TransactionContext>;
 
-  private constructor(private readonly pool: DatabasePool) {}
+  private constructor(private readonly pool: DatabasePool) {
+    this.transactionContext = {};
+  }
 
   public static getOrCreateContext(pool: DatabasePool): RequestTransactionContext {
     if (!RequestTransactionContext.instance) {
@@ -103,43 +111,57 @@ export class RequestTransactionContext {
         return next(new UndefinedPoolError("Pool is not instantiated"));
       }
 
+      const transactionId = randomUUID();
+
       try {
         await this.pool.transaction(async (transaction) => {
           await transaction.query(sql`SET TRANSACTION ISOLATION LEVEL ${isolationLevel};`);
 
-          const transactionContext = new TransactionContext(transaction);
-          transactionContext.isStarted = true;
-          this.transactionContext = transactionContext;
+          this.transactionContext[transactionId] = new TransactionContext(transactionId, transaction);
+          const transactionContext = this.transactionContext[transactionId];
+          req.transactionId = transactionId;
           req.transaction = transaction;
+
+          const autoCommit = transactionContext.commit.bind(transactionContext);
+          const autoRollback = transactionContext.commit.bind(transactionContext);
+
+          // Allow transaction to be automatically committed or rolled back when response is sent.
+          // These event handlers must be removed when the promise below is either resolved or
+          // rejected.
+          res.on("finish", autoCommit).on("error", autoRollback);
 
           // Hold the transaction open until committed or on error.
           await new Promise<void>((resolve, reject) => {
+            // We use .once (as opposed to .on) because we want to commit or rollback at most
+            // once.
             transactionContext
               .once("commit", () => {
+                // Prevent the response events from being registered multiple times if
+                // transaction.begin() is called again down the middleware chain.
+                res.off("finish", autoCommit).off("error", autoRollback);
                 resolve();
               })
-              .once("error", (error) => {
-                transactionContext.error = error;
+              .once("rollback", (error) => {
+                // Prevent the response events from being registered multiple times if
+                // transaction.begin() is called again down the middleware chain.
+                res.off("finish", autoCommit).off("error", autoRollback);
                 reject(error);
               });
 
             // While the transaction is held open, hand off control to next middleware.
             next();
-
-            res.once("finish", () => {
-              if (transactionContext.isStarted && !transactionContext.error) {
-                transactionContext.emit("commit");
-              }
-            });
           });
-
-          transactionContext.isStarted = false;
         }, retryLimit);
+
+        // Hand control over to the next middleware in the pipeline when transaction is completed.
+        next();
       } catch (error) {
         next(error);
       } finally {
         // Outside of transaction context, the req.transaction is undefined.
         delete req.transaction;
+        delete req.transactionId;
+        delete this.transactionContext[transactionId];
       }
     };
   }
@@ -149,14 +171,13 @@ export class RequestTransactionContext {
    */
   public commit(): Handler {
     return (req, res, next) => {
-      if (!this.transactionContext) {
-        return next(
-          new TransactionOutOfBoundsError("Cannot commit outside of transaction context")
-        );
+      if (!req.transactionId) {
+        return next(new TransactionOutOfBoundsError("Cannot commit outside of transaction"));
       }
 
-      this.transactionContext.emit("commit");
-      next();
+      // No need to call next() here since this.beginn handler will call next() when the promise
+      // resolves.
+      this.transactionContext[req.transactionId].commit();
     };
   }
 
@@ -165,10 +186,10 @@ export class RequestTransactionContext {
    */
   public catchError(): ErrorRequestHandler {
     return (error, req, res, next) => {
-      if (this.transactionContext) {
-        // No need to call next(error) here since this.transaction handler will call next(err) when
+      if (req.transactionId) {
+        // No need to call next(error) here since this.begin handler will call next(err) when
         // promise rejects.
-        this.transactionContext.emit("error", error);
+        this.transactionContext[req.transactionId].rollback(error);
       } else {
         // Hand off control to next error handler if outside of transaction context.
         next(error);
