@@ -224,3 +224,27 @@ app
 
 app.listen(8080);
 ```
+
+### Setting isolation levels
+
+The `transaction.begin` can take an optional argument to specify transaction isolation levels. It
+defaults to READ COMMITTED isolation level is left empty.
+
+There are three isolation levels: `READ COMMITTED`, `REPEATABLE READ`, and `SERIALIZABLE`.
+
+```typescript
+import createMiddleware, { IsolationLevels } from "express-slonik";
+import { createPool } from "slonik";
+
+const transaction = createMiddleware(createPool("postgres://localhost:5432/example_db"));
+
+app.get(
+  "/posts/:postId/comments",
+  transaction.begin(IsolationLevels.SERIALIZABLE),
+  // ...
+  transaction.end()
+);
+```
+
+For more information on the differences between transaction isolation levels, please refer to:
+[13.2. Transaction Isolation — PostgreSQL documentation](https://www.postgresql.org/docs/current/transaction-iso.html).
