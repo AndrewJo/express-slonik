@@ -33,7 +33,7 @@ jobs:
           path: tests/results
 
 workflows:
-  ci/cd:
+  "ci/cd":
     jobs:
       - test:
           filters:
