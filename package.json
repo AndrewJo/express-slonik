@@ -17,6 +17,7 @@
     "prepare:ts-patch": "ts-patch install -s",
     "pretest": "npm run build",
     "test": "mocha tests/**/*.spec.ts",
+    "test:ci": "nyc --reporter=lcov mocha tests/**/*.spec.ts --reporter mocha-junit-reporter",
     "test:coverage": "nyc npm test",
     "test:coverage:report": "nyc report --reporter=html --reporter=lcov"
   },
