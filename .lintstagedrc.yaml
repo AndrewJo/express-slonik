@@ -1,0 +1,2 @@
+"*.{ts,js,json,yaml,md}":
+  - npx prettier --write
