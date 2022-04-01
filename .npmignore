@@ -1,0 +1,24 @@
+# Ignore all dotfiles and directories
+.*
+
+# Ignore TypeScript build info files
+*.tsbuildinfo
+
+# Ignore settings
+*.json
+*.yaml
+
+# Ignore package files
+*.tgz
+*.tar
+*.gz
+*.xz
+
+# Ignore test coverage directory
+coverage/
+
+# Ignore original TypeScript source files
+src/
+
+# Ignore tests
+tests/
