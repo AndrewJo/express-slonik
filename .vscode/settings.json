@@ -1,0 +1,32 @@
+{
+  /************************************************************************************************
+   * Files
+   ***********************************************************************************************/
+
+  // Clean up whitespaces in files
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+  "files.trimTrailingWhitespace": true,
+
+  /************************************************************************************************
+   * TypeScript
+   ***********************************************************************************************/
+
+  // Code Lens for type implementations
+  "typescript.implementationsCodeLens.enabled": true,
+
+  // Path to TypeScript Development Kit (tsdk)
+  "typescript.tsdk": "node_modules/typescript/lib",
+
+  /************************************************************************************************
+   * Mocha Test Explorer
+   ***********************************************************************************************/
+
+  // Search for spec files in the tests directory
+  "mochaExplorer.files": "tests/**/*.spec.ts",
+
+  // Ensure tests are run in test environment
+  "mochaExplorer.env": {
+    "NODE_ENV": "test"
+  }
+}
