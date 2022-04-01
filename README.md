@@ -1,5 +1,11 @@
 # express-slonik
 
+[![npm](https://img.shields.io/npm/v/express-slonik?style=flat-square)][npm]
+[![CircleCI](https://img.shields.io/circleci/build/github/AndrewJo/express-slonik/master?style=flat-square)][circleci]
+[![Codecov branch](https://img.shields.io/codecov/c/github/AndrewJo/express-slonik/master?style=flat-square)][codecov]
+[![GitHub](https://img.shields.io/github/license/AndrewJo/express-slonik?style=flat-square)](./LICENSE)
+[![npm](https://img.shields.io/npm/dw/express-slonik?style=flat-square)][npm]
+
 [Slonik](https://github.com/gajus/slonik) transaction middleware for [Express.js](https://expressjs.com).
 
 ## Getting started
@@ -248,3 +254,7 @@ app.get(
 
 For more information on the differences between transaction isolation levels, please refer to:
 [13.2. Transaction Isolation — PostgreSQL documentation](https://www.postgresql.org/docs/current/transaction-iso.html).
+
+[npm]: https://www.npmjs.com/package/express-slonik
+[circleci]: https://circleci.com/gh/AndrewJo/express-slonik/tree/master
+[codecov]: https://app.codecov.io/gh/AndrewJo/express-slonik/
