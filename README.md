@@ -1,6 +1,6 @@
 # express-slonik
 
-Slonik transaction middleware for Express.js
+[Slonik](https://github.com/gajus/slonik) transaction middleware for [Express.js](https://expressjs.com).
 
 ## Getting started
 
