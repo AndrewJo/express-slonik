@@ -1,6 +1,6 @@
 {
   "name": "express-slonik",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Slonik transaction middleware",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
