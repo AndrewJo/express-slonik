@@ -6,7 +6,7 @@
 [![GitHub](https://img.shields.io/github/license/AndrewJo/express-slonik?style=flat-square)](./LICENSE)
 [![npm](https://img.shields.io/npm/dw/express-slonik?style=flat-square)][npm]
 
-[Slonik](https://github.com/gajus/slonik) transaction middleware for [Express.js](https://expressjs.com).
+[Slonik](https://github.com/gajus/slonik) transaction middleware for [Express.js](https://expressjs.com) with zero dependencies.
 
 ## Getting started
 
