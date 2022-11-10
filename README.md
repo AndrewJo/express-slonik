@@ -6,7 +6,16 @@
 [![GitHub](https://img.shields.io/github/license/AndrewJo/express-slonik?style=flat-square)](./LICENSE)
 [![npm](https://img.shields.io/npm/dw/express-slonik?style=flat-square)][npm]
 
-[Slonik](https://github.com/gajus/slonik) transaction middleware for [Express.js](https://expressjs.com) with zero dependencies.
+[Slonik][slonik] transaction middleware for [Express.js][expressjs] with zero dependencies.
+
+## Table of Contents
+
+- [Getting started](#getting-started)
+- [Usage](#usage)
+  - [Basic usage](#basic-usage)
+  - [Sharing transaction with multiple route handlers or middleware](#sharing-transaction-with-multiple-route-handlers-or-middleware)
+  - [Setting isolation levels](#setting-isolation-levels)
+- [Version compatibility](#version-compatibility)
 
 ## Getting started
 
@@ -255,6 +264,37 @@ app.get(
 For more information on the differences between transaction isolation levels, please refer to:
 [13.2. Transaction Isolation — PostgreSQL documentation](https://www.postgresql.org/docs/current/transaction-iso.html).
 
+## Version compatibility
+
+express-slonik follows [Semantic Versioning][semver] specification. Each major version breaks
+backwards compatibility with [Slonik][slonik] and [Express.js][expressjs] versions (although
+Express v5 has been extremely slow to come out of beta).
+
+Refer to the compatibility chart below for picking the express-slonik version that works with Slonik
+versions in your project.
+
+| express-slonik |               slonik |
+| -------------: | -------------------: |
+|         ^1.1.0 | ^28.0.0 \|\| ^29.0.0 |
+|  ≥1.0.0 <1.1.0 |              ^28.0.0 |
+
+Minor version will always add support for Slonik versions that doesn't introduce major backwards
+incompatibility that breaks interoperability with this library. For instance, the breaking changes
+introduced between Slonik v28 and v29 are fairly minor and can be used with express-slonik without
+any major refactor to how you use this middleware. However, the difference between v29 and v30
+introduces a major change to the API surface (which also affects
+[other Slonik utility packages][slonik-tools-issue-407]). In this case, the major version of
+express-slonik will be bumped up to indicate that there will be backwards breaking changes.
+
+## Other projects
+
+Need to isolate database calls in your tests? Check out [mocha-slonik][mocha-slonik]!
+
 [npm]: https://www.npmjs.com/package/express-slonik
 [circleci]: https://circleci.com/gh/AndrewJo/express-slonik/tree/master
 [codecov]: https://app.codecov.io/gh/AndrewJo/express-slonik/
+[slonik]: https://github.com/gajus/slonik
+[expressjs]: https://expressjs.com
+[semver]: https://semver.org/
+[slonik-tools-issue-407]: https://github.com/mmkal/slonik-tools/issues/407
+[mocha-slonik]: https://github.com/AndrewJo/mocha-slonik
