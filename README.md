@@ -16,6 +16,7 @@
   - [Sharing transaction with multiple route handlers or middleware](#sharing-transaction-with-multiple-route-handlers-or-middleware)
   - [Setting isolation levels](#setting-isolation-levels)
 - [Version compatibility](#version-compatibility)
+- [Other projects](#other-projects)
 
 ## Getting started
 
