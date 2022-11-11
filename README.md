@@ -39,51 +39,77 @@ transaction.
 **`app.ts`**:
 
 ```typescript
-import express from "express";
 import createMiddleware from "express-slonik";
-import { createPool, sql } from "slonik";
+import { sql } from "slonik";
 
-const pool = createPool("postgres://localhost:5432/example_db");
-const transaction = createMiddleware(pool);
-const app = express();
+export const createServer = ({ app, pool }) => {
+  const transaction = createMiddleware(pool);
 
-app.get(
-  "/user/:id",
-  transaction.begin(),
-  async (req, res, next) => {
-    try {
-      const user = await req.transaction.one(
-        sql`SELECT * FROM users WHERE users.id = ${req.params.id}`
-      );
+  app.get(
+    "/user/:id",
+    transaction.begin(),
+    async (req, res, next) => {
+      try {
+        const user = await req.transaction.one(
+          sql`SELECT * FROM users WHERE users.id = ${req.params.id}`
+        );
 
-      res.json(user);
-    } catch (error) {
-      if (error instanceof NotFoundError) {
-        res.status(404).json({
-          name: error.name,
-          message: `User with given id (${req.params.id}) not found.`,
-        });
-        return;
+        res.json(user);
+      } catch (error) {
+        if (error instanceof NotFoundError) {
+          res.status(404).json({
+            name: error.name,
+            message: `User with given id (${req.params.id}) not found.`,
+          });
+          return;
+        }
+
+        next(error);
       }
+    },
+    transaction.end()
+  );
 
-      next(error);
-    }
-  },
-  transaction.end()
-);
+  const server = app.listen(8080);
 
-app.listen(8080);
+  // Cleanup when server closes or you might have something that keeps the process running.
+  server.on("close", async function () {
+    await pool.end();
+  });
+
+  return server;
+};
+```
+
+**`server.ts`**:
+
+```typescript
+import { Server } from "http";
+import express from "express";
+import { createPool } from "slonik";
+
+/**
+ * Gracefully attempt to shut down the server.
+ */
+async function shutdownHandler(server: Server) {
+  // Handler that triggers a graceful shutdown. Server is responsible for cleaning up stragglers.
+  return async function () {
+    server.close();
+  };
+}
+
+(async function () {
+  const app = express();
+  const pool = await createPool(process.env.DATABASE_URL);
+  const server = createServer({ app, pool });
+
+  process.on("SIGTERM", shutdownHandler(server)).on("SIGINT", shutdownHandler(server));
+})();
 ```
 
 This is functionally equivalent to using `pool.transaction` in your handler:
 
 ```typescript
-import express from "express";
-import { createPool, sql } from "slonik";
-
-const pool = createPool("postgres://localhost:5432/example_db");
-const app = express();
-
 app.get("/user/:id", async (req, res, next) => {
   try {
     const user = await pool.transaction(async (transaction) => {
@@ -103,8 +129,6 @@ app.get("/user/:id", async (req, res, next) => {
     next(error);
   }
 });
-
-app.listen(8080);
 ```
 
 ### Sharing transaction with multiple route handlers or middleware
