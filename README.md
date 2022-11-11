@@ -274,10 +274,11 @@ Express v5 has been extremely slow to come out of beta).
 Refer to the compatibility chart below for picking the express-slonik version that works with Slonik
 versions in your project.
 
-| express-slonik |               slonik |
-| -------------: | -------------------: |
-|         ^1.1.0 | ^28.0.0 \|\| ^29.0.0 |
-|  ≥1.0.0 <1.1.0 |              ^28.0.0 |
+| express-slonik |                            slonik |
+| -------------: | --------------------------------: |
+|         ^2.0.0 | ^30.0.0 \|\| ^31.0.0 \|\| ^32.0.0 |
+|         ^1.1.0 |              ^28.0.0 \|\| ^29.0.0 |
+|  ≥1.0.0 <1.1.0 |                           ^28.0.0 |
 
 Minor version will always add support for Slonik versions that doesn't introduce major backwards
 incompatibility that breaks interoperability with this library. For instance, the breaking changes
