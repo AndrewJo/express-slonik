@@ -47,7 +47,10 @@ export const createServer = ({ app, pool }) => {
 
   app.get(
     "/user/:id",
+
+    // Starts the transaction.
     transaction.begin(),
+
     async (req, res, next) => {
       try {
         const user = await req.transaction.one(
@@ -67,6 +70,11 @@ export const createServer = ({ app, pool }) => {
         next(error);
       }
     },
+
+    // Optional. If omitted, the transaction will automatically commit when the
+    // response is sent, or rollback if there are unhandled errors. Specifying
+    // transaction.end() is useful if you wish to have finer control over when
+    // the transaction commits in the middleware chain.
     transaction.end()
   );
 
