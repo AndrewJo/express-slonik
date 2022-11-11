@@ -20,7 +20,7 @@ describe("createMiddleware", function () {
   let request: ChaiHttp.Agent;
 
   before(async function () {
-    pool = createPool(process.env.DATABASE_URL || "postgres://localhost:5432", {
+    pool = await createPool(process.env.DATABASE_URL || "postgres://localhost:5432", {
       interceptors: [createQueryLoggingInterceptor()],
     });
 

@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import EventEmitter from "events";
 
 import { ErrorRequestHandler, Handler } from "express";
-import { createPool, DatabasePool, DatabaseTransactionConnection, sql } from "slonik";
+import { DatabasePool, DatabaseTransactionConnection, sql } from "slonik";
 import { TransactionOutOfBoundsError, UndefinedPoolError } from "express-slonik/errors";
 
 type EventEmitterOptions = ConstructorParameters<typeof EventEmitter>[0];
@@ -117,7 +117,10 @@ export class RequestTransactionContext {
         await this.pool.transaction(async (transaction) => {
           await transaction.query(sql`SET TRANSACTION ISOLATION LEVEL ${isolationLevel};`);
 
-          this.transactionContext[transactionId] = new TransactionContext(transactionId, transaction);
+          this.transactionContext[transactionId] = new TransactionContext(
+            transactionId,
+            transaction
+          );
           const transactionContext = this.transactionContext[transactionId];
           req.transactionId = transactionId;
           req.transaction = transaction;
@@ -207,10 +210,26 @@ export class RequestTransactionContext {
 }
 
 function isDatabasePool(poolLike: unknown): boolean {
-  const slonikPoolInstance = createPool("");
-  return Object.keys(slonikPoolInstance).every(
-    (method) => typeof poolLike[method] === typeof slonikPoolInstance[method]
-  );
+  const keys = [
+    "any",
+    "anyFirst",
+    "configuration",
+    "connect",
+    "copyFromBinary",
+    "end",
+    "exists",
+    "getPoolState",
+    "many",
+    "manyFirst",
+    "maybeOne",
+    "maybeOneFirst",
+    "one",
+    "oneFirst",
+    "query",
+    "stream",
+    "transaction",
+  ];
+  return keys.every(Object.prototype.hasOwnProperty.bind(poolLike));
 }
 
 /**
@@ -219,9 +238,7 @@ function isDatabasePool(poolLike: unknown): boolean {
  */
 function createMiddleware(pool: DatabasePool): RequestTransactionContext {
   if (!isDatabasePool(pool)) {
-    throw new TypeError(
-      "First argument must be an instance of Slonik pool instance or connection URI"
-    );
+    throw new TypeError("Argument must be an instance of Slonik pool instance");
   }
 
   return RequestTransactionContext.getOrCreateContext(pool);
