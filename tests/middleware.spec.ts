@@ -4,13 +4,16 @@ import chai, { expect, use } from "chai";
 import chaiHttp from "chai-http";
 
 import express, { Express, NextFunction, Request, Response, json, Router } from "express";
-import { createPool, DatabasePool, DatabaseTransactionConnection, sql } from "slonik";
+import { createPool, DatabasePool, DatabaseTransactionConnection } from "slonik";
 import { createQueryLoggingInterceptor } from "slonik-interceptor-query-logging";
+import { z } from "zod";
 
-import createMiddleware, { IsolationLevels, SlonikRequestContext } from "../src";
+import createMiddleware, { IsolationLevels, SlonikRequestContext, sql } from "../src";
 import { timeout } from "@tests/helper";
 
 use(chaiHttp);
+
+const testSchema = z.object({ foo: z.number() });
 
 describe("createMiddleware", function () {
   let pool: DatabasePool;
@@ -26,7 +29,9 @@ describe("createMiddleware", function () {
 
     transaction = createMiddleware(pool);
 
-    await pool.query(sql`CREATE TABLE IF NOT EXISTS test (foo INTEGER NOT NULL);`);
+    await pool.query(
+      sql.typeAlias("void")`CREATE TABLE IF NOT EXISTS test (foo INTEGER NOT NULL);`
+    );
   });
 
   beforeEach(async function () {
@@ -47,11 +52,11 @@ describe("createMiddleware", function () {
 
   afterEach(async function () {
     await promisify(request.close)();
-    await pool.query(sql`TRUNCATE TABLE test;`);
+    await pool.query(sql.typeAlias("void")`TRUNCATE TABLE test;`);
   });
 
   after(async function () {
-    await pool.query(sql`DROP TABLE test;`);
+    await pool.query(sql.typeAlias("void")`DROP TABLE test;`);
     await pool.end();
   });
 
@@ -95,19 +100,23 @@ describe("createMiddleware", function () {
         "/",
         transaction.begin(),
         async (req: Request, res: Response, next: NextFunction) => {
-          await req.transaction.query(sql`UPDATE test SET foo = ${newVal} WHERE foo = ${oldVal}`);
+          await req.transaction.query(
+            sql.typeAlias("void")`UPDATE test SET foo = ${newVal} WHERE foo = ${oldVal}`
+          );
           next();
         },
         transaction.end(),
         transaction.begin(),
         async (req: Request, res: Response) => {
           // Previous transaction should've committed so we should be able to query by req.body.foo
-          const { foo } = await req.transaction.one(sql`SELECT foo FROM test`);
+          const { foo } = await req.transaction.one(sql.type(testSchema)`SELECT foo FROM test`);
           res.json(foo);
         }
       );
 
-      await pool.oneFirst(sql`INSERT INTO test (foo) VALUES (${oldVal}) RETURNING foo`);
+      await pool.oneFirst(
+        sql.typeAlias("void")`INSERT INTO test (foo) VALUES (${oldVal}) RETURNING foo`
+      );
       const response = await request.put("/").send({ foo: 2 });
       expect(response.body).to.equal(2);
     });
@@ -117,7 +126,9 @@ describe("createMiddleware", function () {
         "/",
         transaction.begin(),
         async (req: Request, res: Response) => {
-          await req.transaction.query(sql`INSERT INTO test (foo) VALUES (999) RETURNING foo`);
+          await req.transaction.query(
+            sql.typeAlias("void")`INSERT INTO test (foo) VALUES (999) RETURNING foo`
+          );
           res.end();
         }
         // Omit transaction.end() so we can test if autocommit works when response is sent.
@@ -125,7 +136,9 @@ describe("createMiddleware", function () {
 
       await request.post("/");
 
-      const result = await pool.oneFirst(sql`SELECT foo FROM test WHERE foo = 999`);
+      const result = await pool.oneFirst(
+        sql.type(testSchema)`SELECT foo FROM test WHERE foo = 999`
+      );
       expect(result).to.equal(999);
     });
 
@@ -135,7 +148,9 @@ describe("createMiddleware", function () {
         transaction.begin(IsolationLevels.READ_COMMITTED, 1),
         async (req: Request, res: Response, next: NextFunction) => {
           try {
-            await req.transaction.query(sql`INSERT INTO test (foo) VALUES (100) RETURNING foo`);
+            await req.transaction.query(
+              sql.typeAlias("void")`INSERT INTO test (foo) VALUES (100) RETURNING foo`
+            );
             throw new Error("some error");
           } catch (error) {
             next(error);
@@ -146,14 +161,16 @@ describe("createMiddleware", function () {
 
       await request.post("/");
 
-      const result = await pool.maybeOneFirst(sql`SELECT foo FROM test WHERE foo = 100`);
+      const result = await pool.maybeOneFirst(
+        sql.type(testSchema)`SELECT foo FROM test WHERE foo = 100`
+      );
       expect(result).to.be.null;
     });
 
     context("when isolation level is READ COMMITTED", function () {
       beforeEach(async function () {
         await pool.query(
-          sql`INSERT INTO test (foo) SELECT * FROM ${sql.unnest(
+          sql.typeAlias("void")`INSERT INTO test (foo) SELECT * FROM ${sql.unnest(
             [[101], [102]],
             ["int4"]
           )} RETURNING foo`
@@ -168,7 +185,7 @@ describe("createMiddleware", function () {
               await timeout(50);
 
               const result = await req.transaction.one(
-                sql`SELECT foo FROM test WHERE foo = ${req.params.foo}`
+                sql.type(testSchema)`SELECT foo FROM test WHERE foo = ${req.params.foo}`
               );
 
               res.json(result);
@@ -180,14 +197,17 @@ describe("createMiddleware", function () {
             transaction.begin(IsolationLevels.READ_COMMITTED, 5),
             async (req: Request, res: Response) => {
               await req.transaction.query(
-                sql`UPDATE test SET foo = ${req.body.foo} WHERE foo = ${req.params.foo}`
+                sql.typeAlias("void")`
+                  UPDATE test SET
+                    foo = ${req.body.foo}
+                  WHERE foo = ${req.params.foo}`
               );
 
               // Update but don't commit so the other transaction can read uncommitted data.
               await timeout(100);
 
               const result = await req.transaction.one(
-                sql`SELECT foo FROM test WHERE foo = ${req.body.foo}`
+                sql.type(testSchema)`SELECT foo FROM test WHERE foo = ${req.body.foo}`
               );
 
               res.json(result);
