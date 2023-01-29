@@ -2,7 +2,6 @@ import { createSqlTag, DatabaseTransactionConnection } from "slonik";
 import { z } from "zod";
 
 import createMiddleware from "express-slonik/middleware";
-import { IsolationLevels } from "express-slonik/middleware";
 import type { IsolationLevel, RequestTransactionContext } from "express-slonik/middleware";
 
 declare global {
@@ -21,7 +20,7 @@ export const sql = createSqlTag({
   },
 });
 
-export { IsolationLevels };
+export { IsolationLevels } from "express-slonik/middleware";
 export type { IsolationLevel, RequestTransactionContext as SlonikRequestContext };
 
 export default createMiddleware;
