@@ -2,12 +2,18 @@ import { randomUUID } from "crypto";
 import EventEmitter from "events";
 
 import { ErrorRequestHandler, Handler } from "express";
-import { DatabasePool, DatabaseTransactionConnection } from "slonik";
+import { createSqlTag, DatabasePool, DatabaseTransactionConnection } from "slonik";
+import { z } from "zod";
 
-import { sql } from "./index";
 import { TransactionOutOfBoundsError, UndefinedPoolError } from "./errors";
 
 type EventEmitterOptions = ConstructorParameters<typeof EventEmitter>[0];
+
+export const sql = createSqlTag({
+  typeAliases: {
+    void: z.object({}).strict(),
+  },
+});
 
 /**
  * PostgreSQL transaction isolation levels.
