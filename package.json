@@ -72,7 +72,7 @@
     "nyc": "^15.1.0",
     "prettier": "^2.6.1",
     "rimraf": "^3.0.2",
-    "slonik": "^^30.0.0 || ^31.0.0 || ^32.0.0",
+    "slonik": "^30.0.0 || ^31.0.0 || ^32.0.0",
     "slonik-interceptor-query-logging": "^1.4.7",
     "source-map-support": "^0.5.21",
     "ts-node": "^10.7.0",
