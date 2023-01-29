@@ -1,7 +1,6 @@
 import { DatabaseTransactionConnection } from "slonik";
 
 import createMiddleware from "express-slonik/middleware";
-import { IsolationLevels } from "express-slonik/middleware";
 import type { IsolationLevel, RequestTransactionContext } from "express-slonik/middleware";
 
 declare global {
@@ -14,7 +13,7 @@ declare global {
   }
 }
 
-export { IsolationLevels };
+export { IsolationLevels, sql } from "express-slonik/middleware";
 export type { IsolationLevel, RequestTransactionContext as SlonikRequestContext };
 
 export default createMiddleware;

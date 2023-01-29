@@ -41,6 +41,13 @@ transaction.
 ```typescript
 import createMiddleware from "express-slonik";
 import { sql } from "slonik";
+import { z } from "zod";
+
+const userSchema = z.object({
+  id: z.number().int(),
+  name: z.string(),
+  email: z.string().email(),
+});
 
 export const createServer = ({ app, pool }) => {
   const transaction = createMiddleware(pool);
@@ -54,7 +61,7 @@ export const createServer = ({ app, pool }) => {
     async (req, res, next) => {
       try {
         const user = await req.transaction.one(
-          sql`SELECT * FROM users WHERE users.id = ${req.params.id}`
+          sql.type(userSchema)`SELECT * FROM users WHERE users.id = ${req.params.id}`
         );
 
         res.json(user);
@@ -95,6 +102,7 @@ export const createServer = ({ app, pool }) => {
 import { Server } from "http";
 import express from "express";
 import { createPool } from "slonik";
+import { createServer, userSchema } from "./app";
 
 /**
  * Gracefully attempt to shut down the server.
@@ -121,7 +129,9 @@ This is functionally equivalent to using `pool.transaction` in your handler:
 app.get("/user/:id", async (req, res, next) => {
   try {
     const user = await pool.transaction(async (transaction) => {
-      return await transaction.one(sql`SELECT * FROM users WHERE users.id = ${req.params.id}`);
+      return await transaction.one(
+        sql.type(userSchema)`SELECT * FROM users WHERE users.id = ${req.params.id}`
+      );
     });
 
     res.json(user);
@@ -146,14 +156,27 @@ sure the user edit handler are on the same database transaction as the current u
 This can prevent concurrent user updates from causing inconsistent the query result between the
 time the current user middleware and your user edit handler executes.
 
+**`schemas/user.ts`**:
+
+```typescript
+import { z } from "zod";
+export const userSchema = z.object({
+  id: z.number().int(),
+  name: z.string(),
+  email: z.string().email(),
+});
+```
+
 **`middleware/current-user.ts`**:
 
 ```typescript
+import { userSchema } from "schemas/user";
+
 export default function currentUser() {
   return async function (req, res, next) {
     try {
       req.currentUser = await req.transaction.one(
-        sql`SELECT * FROM users WHERE users.id = ${req.session.userId}`
+        sql.type(userSchema)`SELECT * FROM users WHERE users.id = ${req.session.userId}`
       );
       next();
     } catch (error) {
@@ -170,6 +193,7 @@ import express, { json } from "express";
 import createMiddleware from "express-slonik";
 import { createPool, sql } from "slonik";
 import currentUser from "./middleware/current-user";
+import { userSchema } from "./schemas/user";
 
 const pool = createPool("postgres://localhost:5432/example_db");
 const transaction = createMiddleware(pool);
@@ -185,11 +209,13 @@ app
       try {
         // Same transaction as currentUser middleware
         await req.transaction.query(
-          sql`UPDATE users SET email = ${req.body.email} WHERE users.id = ${req.params.id}`
+          sql.type(
+            z.object({})
+          )`UPDATE users SET email = ${req.body.email} WHERE users.id = ${req.params.id}`
         );
 
         const updatedUser = await req.transaction.one(
-          sql`SELECT * FROM users WHERE users.id = ${req.params.id}`
+          sql.type(userSchema)`SELECT * FROM users WHERE users.id = ${req.params.id}`
         );
         res.json(updatedUser);
       } catch (error) {
@@ -214,6 +240,8 @@ import createMiddleware from "express-slonik";
 import { body, validationResult } from "express-validator";
 import { createPool, sql } from "slonik";
 import currentUser from "./middleware/current-user";
+import { teamSchema } from "./schemas/team";
+import { userSchema } from "./schemas/user";
 
 const pool = createPool("postgres://localhost:5432/example_db");
 const transaction = createMiddleware(pool);
@@ -230,7 +258,7 @@ app
       .custom(async (value, { req }) => {
         // Fail validation if client is attempting to add user to a non-existant team
         const isValidTeam = await req.transaction.exists(
-          sql`SELECT * FROM teams WHERE teams.id = ${req.body.team_id}`
+          sql.type(teamSchema)`SELECT * FROM teams WHERE teams.id = ${req.body.team_id}`
         );
 
         if (!isValidTeam) {
@@ -247,7 +275,7 @@ app
 
       // We can assume the request body is valid and sanitized by the time we reach this point.
       try {
-        await req.transaction.query(sql`
+        await req.transaction.query(sql.unsafe`
           UPDATE users SET
             email = ${req.body.email},
             team_id = ${req.body.team_id}
@@ -256,7 +284,7 @@ app
         `);
 
         const user = await req.transaction.one(
-          sql`SELECT * FROM users WHERE users.id = ${req.params.id}`
+          sql.type(userSchema)`SELECT * FROM users WHERE users.id = ${req.params.id}`
         );
 
         res.status(200).json(user);
@@ -308,6 +336,7 @@ versions in your project.
 
 | express-slonik |                            slonik |
 | -------------: | --------------------------------: |
+|         ^3.0.0 |                           ^33.0.0 |
 |         ^2.0.0 | ^30.0.0 \|\| ^31.0.0 \|\| ^32.0.0 |
 |         ^1.1.0 |              ^28.0.0 \|\| ^29.0.0 |
 |  ≥1.0.0 <1.1.0 |                           ^28.0.0 |

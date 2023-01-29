@@ -2,10 +2,18 @@ import { randomUUID } from "crypto";
 import EventEmitter from "events";
 
 import { ErrorRequestHandler, Handler } from "express";
-import { DatabasePool, DatabaseTransactionConnection, sql } from "slonik";
-import { TransactionOutOfBoundsError, UndefinedPoolError } from "express-slonik/errors";
+import { createSqlTag, DatabasePool, DatabaseTransactionConnection } from "slonik";
+import { z } from "zod";
+
+import { TransactionOutOfBoundsError, UndefinedPoolError } from "./errors";
 
 type EventEmitterOptions = ConstructorParameters<typeof EventEmitter>[0];
+
+export const sql = createSqlTag({
+  typeAliases: {
+    void: z.object({}).strict(),
+  },
+});
 
 /**
  * PostgreSQL transaction isolation levels.
@@ -18,7 +26,7 @@ export const IsolationLevels = {
    *
    * @see {@link https://www.postgresql.org/docs/current/transaction-iso.html#XACT-READ-COMMITTED | READ COMMITTED}
    */
-  READ_COMMITTED: sql`READ COMMITTED`,
+  READ_COMMITTED: sql.fragment`READ COMMITTED`,
 
   /**
    * Higher isolation level than READ COMMITTED. Guarantees repeatable reads _in addition to_
@@ -26,7 +34,7 @@ export const IsolationLevels = {
    *
    * @see {@link https://www.postgresql.org/docs/current/transaction-iso.html#XACT-REPEATABLE-READ | REPEATABLE READ}
    */
-  REPEATABLE_READ: sql`REPEATABLE READ`,
+  REPEATABLE_READ: sql.fragment`REPEATABLE READ`,
 
   /**
    * Highest isolation level. Guarantees phantom reads and serialization anomalies never happen
@@ -34,7 +42,7 @@ export const IsolationLevels = {
    *
    * @see {@link https://www.postgresql.org/docs/current/transaction-iso.html#XACT-SERIALIZABLE | SERIALIZABLE}
    */
-  SERIALIZABLE: sql`SERIALIZABLE`,
+  SERIALIZABLE: sql.fragment`SERIALIZABLE`,
 } as const;
 
 export type IsolationLevel = typeof IsolationLevels[keyof typeof IsolationLevels];
@@ -115,7 +123,9 @@ export class RequestTransactionContext {
 
       try {
         await this.pool.transaction(async (transaction) => {
-          await transaction.query(sql`SET TRANSACTION ISOLATION LEVEL ${isolationLevel};`);
+          await transaction.query(
+            sql.typeAlias("void")`SET TRANSACTION ISOLATION LEVEL ${isolationLevel};`
+          );
 
           this.transactionContext[transactionId] = new TransactionContext(
             transactionId,
