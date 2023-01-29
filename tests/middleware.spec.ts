@@ -13,7 +13,7 @@ import { timeout } from "@tests/helper";
 
 use(chaiHttp);
 
-const testSchema = z.object({ foo: z.number() });
+const testSchema = z.object({ foo: z.number().int() });
 
 describe("createMiddleware", function () {
   let pool: DatabasePool;
