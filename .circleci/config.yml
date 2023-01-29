@@ -11,9 +11,14 @@ orbs:
 
 jobs:
   test:
+    parameters:
+      node-version:
+        default: "lts"
+        description: The target version of Node.js to run tests against.
+        type: string
     docker:
-      - image: cimg/node:lts
-      - image: circleci/postgres:13-ram
+      - image: cimg/node:<< parameters.node-version >>
+      - image: cimg/postgres:13.8
         environment:
           POSTGRES_PASSWORD: circleci_test
     working_directory: ~/express-slonik
@@ -67,26 +72,50 @@ jobs:
           condition: << pipeline.git.tag >>
           steps:
             - run: npm publish --dry-run
-
+  release:
+    docker:
+      - image: cimg/node:lts
+    working_directory: ~/express-slonik
+    steps:
+      - add_ssh_keys:
+          fingerprints:
+            - "79:df:47:6a:ab:d1:08:40:ae:41:a1:76:c5:77:ac:56"
+      - checkout
+      - run:
+          name: Import GPG key
+          command: echo -e "${GPG_KEY}" | base64 -d | gunzip | gpg --batch --yes --import
+      - run:
+          name: Set up GPG Script
+          command: |
+            echo '/usr/bin/gpg --batch --no-tty --passphrase ${GPG_PASSPHRASE} --pinentry-mode loopback "$@"' > /tmp/gpg-with-passphrase
+            chmod +x /tmp/gpg-with-passphrase
+      - run:
+          name: Configure Git client
+          command: |
+            git config gpg.program "/tmp/gpg-with-passphrase"
+            git config commit.gpgsign true
+            git config --global user.signingkey ${GPG_KEY_ID}
+            git config --global user.email bot@andrewjo.com
+            git config --global user.name "Semantic Release Bot"
+      - node/install-packages
+      - run:
+          name: Run semantic-release
+          command: npm run semantic-release
 workflows:
-  build-and-publish:
+  build-and-release:
     jobs:
       - test:
+          name: test-node-v<< matrix.node-version >>
+          context: test
           filters:
             tags:
               only: /v\d+(?:\.\d+){0,2}(?:-\w+(?:\.\w+)*){0,1}/
-      - build:
+          matrix:
+            parameters:
+              node-version: ["14.21", "16.19", "18.13"]
+      - release:
+          context:
+            - npm
+            - semantic-release
           requires:
             - test
-          filters:
-            tags:
-              only: /v\d+(?:\.\d+){0,2}(?:-\w+(?:\.\w+)*){0,1}/
-      - publish:
-          context: npm
-          requires:
-            - build
-          filters:
-            branches:
-              only: master
-            tags:
-              only: /v\d+(?:\.\d+){0,2}(?:-\w+(?:\.\w+)*){0,1}/
