@@ -11,7 +11,7 @@
     "declarationMap": true,
     "module": "commonjs",
     "esModuleInterop": true,
-    "target": "es6",
+    "target": "ES2020",
     "moduleResolution": "node",
     "types": ["node", "mocha"],
     "lib": ["ES2020"],
