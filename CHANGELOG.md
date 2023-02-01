@@ -1,3 +1,9 @@
+## [3.0.1](https://github.com/AndrewJo/express-slonik/compare/v3.0.0...v3.0.1) (2023-02-01)
+
+### Bug Fixes
+
+- allow build target to be ES2020 ([3424144](https://github.com/AndrewJo/express-slonik/commit/3424144cbe98f05d01edaef099ca3df354d9c13b))
+
 # [3.0.0](https://github.com/AndrewJo/express-slonik/compare/v2.0.1...v3.0.0) (2023-01-29)
 
 - feat(deps)!: upgrade to Slonik v33 (#4) ([75615df](https://github.com/AndrewJo/express-slonik/commit/75615df562d1770fffe316bd1865b3ee17624894)), closes [#4](https://github.com/AndrewJo/express-slonik/issues/4)
