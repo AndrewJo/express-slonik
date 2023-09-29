@@ -1,3 +1,9 @@
+# [3.1.0](https://github.com/AndrewJo/express-slonik/compare/v3.0.1...v3.1.0) (2023-09-29)
+
+### Features
+
+- add support for slonik v34 and isDatabasePool narrows type ([#6](https://github.com/AndrewJo/express-slonik/issues/6)) ([52e67f5](https://github.com/AndrewJo/express-slonik/commit/52e67f5ac7547a1b6bae2fab8d5851160bc472ae))
+
 ## [3.0.1](https://github.com/AndrewJo/express-slonik/compare/v3.0.0...v3.0.1) (2023-02-01)
 
 ### Bug Fixes
