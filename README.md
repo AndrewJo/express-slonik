@@ -61,7 +61,9 @@ export const createServer = ({ app, pool }) => {
     async (req, res, next) => {
       try {
         const user = await req.transaction.one(
-          sql.type(userSchema)`SELECT * FROM users WHERE users.id = ${req.params.id}`
+          sql.type(
+            userSchema
+          )`SELECT * FROM users WHERE users.id = ${req.params.id}`
         );
 
         res.json(user);
@@ -119,7 +121,9 @@ async function shutdownHandler(server: Server) {
   const pool = await createPool(process.env.DATABASE_URL);
   const server = createServer({ app, pool });
 
-  process.on("SIGTERM", shutdownHandler(server)).on("SIGINT", shutdownHandler(server));
+  process
+    .on("SIGTERM", shutdownHandler(server))
+    .on("SIGINT", shutdownHandler(server));
 })();
 ```
 
@@ -130,7 +134,9 @@ app.get("/user/:id", async (req, res, next) => {
   try {
     const user = await pool.transaction(async (transaction) => {
       return await transaction.one(
-        sql.type(userSchema)`SELECT * FROM users WHERE users.id = ${req.params.id}`
+        sql.type(
+          userSchema
+        )`SELECT * FROM users WHERE users.id = ${req.params.id}`
       );
     });
 
@@ -176,7 +182,9 @@ export default function currentUser() {
   return async function (req, res, next) {
     try {
       req.currentUser = await req.transaction.one(
-        sql.type(userSchema)`SELECT * FROM users WHERE users.id = ${req.session.userId}`
+        sql.type(
+          userSchema
+        )`SELECT * FROM users WHERE users.id = ${req.session.userId}`
       );
       next();
     } catch (error) {
@@ -215,7 +223,9 @@ app
         );
 
         const updatedUser = await req.transaction.one(
-          sql.type(userSchema)`SELECT * FROM users WHERE users.id = ${req.params.id}`
+          sql.type(
+            userSchema
+          )`SELECT * FROM users WHERE users.id = ${req.params.id}`
         );
         res.json(updatedUser);
       } catch (error) {
@@ -258,7 +268,9 @@ app
       .custom(async (value, { req }) => {
         // Fail validation if client is attempting to add user to a non-existant team
         const isValidTeam = await req.transaction.exists(
-          sql.type(teamSchema)`SELECT * FROM teams WHERE teams.id = ${req.body.team_id}`
+          sql.type(
+            teamSchema
+          )`SELECT * FROM teams WHERE teams.id = ${req.body.team_id}`
         );
 
         if (!isValidTeam) {
@@ -284,7 +296,9 @@ app
         `);
 
         const user = await req.transaction.one(
-          sql.type(userSchema)`SELECT * FROM users WHERE users.id = ${req.params.id}`
+          sql.type(
+            userSchema
+          )`SELECT * FROM users WHERE users.id = ${req.params.id}`
         );
 
         res.status(200).json(user);
@@ -312,7 +326,9 @@ There are three isolation levels: `READ COMMITTED`, `REPEATABLE READ`, and `SERI
 import createMiddleware, { IsolationLevels } from "express-slonik";
 import { createPool } from "slonik";
 
-const transaction = createMiddleware(createPool("postgres://localhost:5432/example_db"));
+const transaction = createMiddleware(
+  createPool("postgres://localhost:5432/example_db")
+);
 
 app.get(
   "/posts/:postId/comments",
@@ -336,7 +352,7 @@ versions in your project.
 
 | express-slonik |                            slonik |
 | -------------: | --------------------------------: |
-|         ^3.0.0 |                           ^33.0.0 |
+|         ^3.0.0 |              ^33.0.0 \|\| ^34.0.0 |
 |         ^2.0.0 | ^30.0.0 \|\| ^31.0.0 \|\| ^32.0.0 |
 |         ^1.1.0 |              ^28.0.0 \|\| ^29.0.0 |
 |  ≥1.0.0 <1.1.0 |                           ^28.0.0 |
