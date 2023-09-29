@@ -2,7 +2,11 @@ import { randomUUID } from "crypto";
 import EventEmitter from "events";
 
 import { ErrorRequestHandler, Handler } from "express";
-import { createSqlTag, DatabasePool, DatabaseTransactionConnection } from "slonik";
+import {
+  createSqlTag,
+  DatabasePool,
+  DatabaseTransactionConnection,
+} from "slonik";
 import { z } from "zod";
 
 import { TransactionOutOfBoundsError, UndefinedPoolError } from "./errors";
@@ -45,7 +49,8 @@ export const IsolationLevels = {
   SERIALIZABLE: sql.fragment`SERIALIZABLE`,
 } as const;
 
-export type IsolationLevel = typeof IsolationLevels[keyof typeof IsolationLevels];
+export type IsolationLevel =
+  typeof IsolationLevels[keyof typeof IsolationLevels];
 
 interface TransactionEvents {
   commit: () => void;
@@ -57,8 +62,14 @@ declare interface TransactionContext {
     event: K,
     ...args: Parameters<TransactionEvents[K]>
   ): boolean;
-  on<K extends keyof TransactionEvents>(event: K, listener: TransactionEvents[K]): this;
-  once<K extends keyof TransactionEvents>(event: K, listener: TransactionEvents[K]): this;
+  on<K extends keyof TransactionEvents>(
+    event: K,
+    listener: TransactionEvents[K]
+  ): this;
+  once<K extends keyof TransactionEvents>(
+    event: K,
+    listener: TransactionEvents[K]
+  ): this;
 }
 
 /**
@@ -95,7 +106,9 @@ export class RequestTransactionContext {
     this.transactionContext = {};
   }
 
-  public static getOrCreateContext(pool: DatabasePool): RequestTransactionContext {
+  public static getOrCreateContext(
+    pool: DatabasePool
+  ): RequestTransactionContext {
     if (!RequestTransactionContext.instance) {
       RequestTransactionContext.instance = new RequestTransactionContext(pool);
     }
@@ -124,7 +137,9 @@ export class RequestTransactionContext {
       try {
         await this.pool.transaction(async (transaction) => {
           await transaction.query(
-            sql.typeAlias("void")`SET TRANSACTION ISOLATION LEVEL ${isolationLevel};`
+            sql.typeAlias(
+              "void"
+            )`SET TRANSACTION ISOLATION LEVEL ${isolationLevel};`
           );
 
           this.transactionContext[transactionId] = new TransactionContext(
@@ -136,7 +151,8 @@ export class RequestTransactionContext {
           req.transaction = transaction;
 
           const autoCommit = transactionContext.commit.bind(transactionContext);
-          const autoRollback = transactionContext.commit.bind(transactionContext);
+          const autoRollback =
+            transactionContext.commit.bind(transactionContext);
 
           // Allow transaction to be automatically committed or rolled back when response is sent.
           // These event handlers must be removed when the promise below is either resolved or
@@ -185,11 +201,15 @@ export class RequestTransactionContext {
   public commit(): Handler {
     return (req, res, next) => {
       if (!req.transactionId) {
-        return next(new TransactionOutOfBoundsError("Cannot commit outside of transaction"));
+        return next(
+          new TransactionOutOfBoundsError(
+            "Cannot commit outside of transaction"
+          )
+        );
       }
 
-      // No need to call next() here since this.beginn handler will call next() when the promise
-      // resolves.
+      // No need to call next() here since this.begin handler will call next()
+      // when the promise resolves.
       this.transactionContext[req.transactionId].commit();
     };
   }
