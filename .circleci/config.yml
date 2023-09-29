@@ -21,6 +21,7 @@ jobs:
         type: string
       mocha-slonik-version:
         description: The target version of Mocha Slonik to run tests against.
+        type: string
     docker:
       - image: cimg/node:<< parameters.node-version >>
       - image: cimg/postgres:13.8
