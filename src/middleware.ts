@@ -245,7 +245,6 @@ function isDatabasePool(poolLike: unknown): boolean {
     "anyFirst",
     "configuration",
     "connect",
-    "copyFromBinary",
     "end",
     "exists",
     "getPoolState",
