@@ -239,7 +239,7 @@ export class RequestTransactionContext {
   }
 }
 
-function isDatabasePool(poolLike: unknown): boolean {
+function isDatabasePool(poolLike: unknown): poolLike is DatabasePool {
   const keys = [
     "any",
     "anyFirst",
