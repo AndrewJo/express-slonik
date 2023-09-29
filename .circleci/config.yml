@@ -125,9 +125,17 @@ workflows:
               slonik-version: ["33.3.3", "34.3.0"]
               mocha-slonik-version: ["7.0.1", "8.0.0"]
             exclude:
-              - slonik-version: "33.3.3"
+              - node-version: "16.19"
+                slonik-version: "33.3.3"
                 mocha-slonik-version: "8.0.0"
-              - slonik-version: "34.3.0"
+              - node-version: "18.18"
+                slonik-version: "33.3.3"
+                mocha-slonik-version: "8.0.0"
+              - node-version: "16.19"
+                slonik-version: "34.3.0"
+                mocha-slonik-version: "7.0.1"
+              - node-version: "18.18"
+                slonik-version: "34.3.0"
                 mocha-slonik-version: "7.0.1"
       - release:
           context:
