@@ -1,3 +1,9 @@
+# [3.2.0](https://github.com/AndrewJo/express-slonik/compare/v3.1.0...v3.2.0) (2023-10-16)
+
+### Features
+
+- add support for Slonik v35, v36, v37 ([#7](https://github.com/AndrewJo/express-slonik/issues/7)) ([98bd100](https://github.com/AndrewJo/express-slonik/commit/98bd100270c02e018c7f8672d87c21947ec4c961))
+
 # [3.1.0](https://github.com/AndrewJo/express-slonik/compare/v3.0.1...v3.1.0) (2023-09-29)
 
 ### Features
